@@ -55,3 +55,44 @@ you to easily move tasks between different todo lists.
    * Passing in arguments will add an entry to the goals list
    * goals.txt is like any other todo file, but is used for longer term goals
      or someday/maybe items.
+
+## Examples
+
+    $ todo.sh ls
+    1 Some task
+    2 Some other task
+    3 A third task
+    --
+    2013-06-11: 3 of 3 tasks shown
+
+    $ todo.sh bump 1
+    Some task
+    TODO: 1 bumped from 2013-06-11.txt to 2013-06-12.txt
+
+    $ todo.sh lf 2013-06-12
+    1 Some task
+    --
+    2013-06-12: 1 of 1 tasks shown
+
+    $ todo.sh lsa
+    1 Some other task
+    2 A third task
+    0 x 2013-06-11 Some task bumped:2013-06-12
+
+    $ todo.sh bumpall
+    Some other task
+    A third task
+
+    TODO: all items bumped from 2013-06-11.txt to 2013-06-12.txt
+
+    $ todo.sh lsf 2013-06-10.txt
+    1 Some task I forgot about
+    --
+    2013-06-10: 1 of 1 tasks shown
+
+    $ todo.sh verify
+    2013-06-10.txt
+
+    $ todo.sh bringforward
+    Some task I forgot about
+    TODO: all items bumped from 2013-06-10.txt to 2013-06-11.txt
