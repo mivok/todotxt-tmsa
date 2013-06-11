@@ -1,0 +1,41 @@
+#!/bin/bash
+# Modifies the behavior of the addto command in the following ways:
+#   - If the file doesn't exist, but it is in the form YYYY-MM-DD, then create
+#     the file before running the original addto.
+#   - Automatically adds .txt to the end of the filename
+#   - Allow 'tomorrow' as a filename
+ACTION=$1
+
+if [[ $ACTION == "usage" ]]; then
+    echo '    addto DEST "TEXT TO ADD"'
+    echo "      Adds a line of text to a different todo file"
+    exit
+fi
+
+shift
+FILE=$1
+shift
+
+# Deal with 'tomorrow' as a filename
+if [[ $FILE == 'tomorrow' ]]; then
+    DAY=$(date +%w)
+    if [[ $DAY == "5" ]]; then
+        # Friday, skip to next Monday
+        MODIFIER="+Mon"
+    else
+        MODIFIER="+1d"
+    fi
+    FILE=$(date -v$MODIFIER +%Y-%m-%d)
+fi
+
+# Make sure the filename has a .txt extension on the end
+FILE=${FILE/.txt}.txt
+
+if [[ ! -f $TODO_DIR/$FILE ]]; then
+    if [[ $FILE =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}\.txt$ ]]; then
+        # File looks like a date, create it
+        touch $TODO_DIR/$FILE
+    fi
+fi
+
+$TODO_FULL_SH command addto $FILE "$@"

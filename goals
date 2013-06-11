@@ -1,0 +1,24 @@
+#!/bin/bash
+# Manage a goals file
+ACTION=$1
+
+if [[ $ACTION == "usage" ]]; then
+    echo "    goals"
+    echo "      View/manage a goals file"
+    echo "      No arguments: view the goals file"
+    echo "      Arguments: add an entry to the goals file"
+    exit
+fi
+shift
+
+# You can configure a goals file with the TODO_GOALS_FILE variable, or it will
+# default to goals.txt inside your todo directory
+if [[ -z $TODO_GOALS_FILE ]]; then
+    TODO_GOALS_FILE=goals.txt
+fi
+
+if [[ -n $2 ]]; then
+    $TODO_FULL_SH addto $TODO_GOALS_FILE "$@"
+else
+    $TODO_FULL_SH listfile $TODO_GOALS_FILE
+fi

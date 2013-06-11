@@ -1,0 +1,19 @@
+#!/bin/bash
+# Commits and pushes todos
+ACTION=$1
+
+if [[ $ACTION == "usage" ]]; then
+    echo "    push"
+    echo "      Commit and push todos"
+    exit
+fi
+
+cd $TODO_DIR
+git add -A
+# Goals is in the parent directory
+git add ../goals.txt
+git commit -m "TODO updates"
+if [[ $? == "0" ]]; then
+    # Only push if the commit was successful
+    git push origin master
+fi
