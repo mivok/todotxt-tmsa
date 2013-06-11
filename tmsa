@@ -57,13 +57,21 @@ def find_unmanaged():
 
 def bump(from_file, to_file, line_num=None):
     "Bumps a task, or all if no line is provided"
+    auto_archive = "TODOTXT_AUTO_ARCHIVE" in os.environ and \
+        os.environ["TODOTXT_AUTO_ARCHIVE"] == "1"
+    preserve_line_numbers = "TODOTXT_PRESERVE_LINE_NUMBERS" in \
+        os.environ and os.environ["TODOTXT_PRESERVE_LINE_NUMBERS"] == "1"
+
     os.chdir(os.environ["TODO_DIR"])
     now = datetime.datetime.now()
     today = now.strftime("%Y-%m-%d")
     ifh = open(from_file)  # File to bump from
-    dfh = open("%s-done.txt" % from_file[:-4], "a")  # Done file
     ofh = open(to_file, "a")  # File to bump to
     tfh = open("%s.tmp" % from_file, "w")  # Temporary file
+    if auto_archive:
+        dfh = open("%s-done.txt" % from_file[:-4], "a")  # Done file
+    else:
+        dfh = tfh
     bumped = []
     for n, line in enumerate(ifh):
         n += 1  # 1-indexed lines
@@ -75,12 +83,15 @@ def bump(from_file, to_file, line_num=None):
             dfh.write("x %s %s bumped:%s\n" % (today,
                       strip_priority(line).rstrip(),
                       to_file[:-4]))
+            if auto_archive and preserve_line_numbers and line_num:
+                tfh.write("\n")
             bumped.append(line.rstrip())
         else:
             # Don't bump the item
             tfh.write(line)
     ifh.close()
-    dfh.close()
+    if auto_archive:
+        dfh.close()
     ofh.close()
     tfh.close()
     # Now move the temp file (with the bumped entries remove) to the original
