@@ -9,7 +9,7 @@ you to easily move tasks between different todo lists.
 ## Installation instructions
 
  * Install [todotxt-cli](https://github.com/ginatrapani/todo.txt-cli)
- * Edit the todo.cfg file. Change the locaitons of the TODO_FILE and
+ * Edit the todo.cfg file. Change the locations of the TODO_FILE and
    DONE_FILE:
 
         export TODO_FILE="$TODO_DIR/$(date +%Y-%m-%d).txt"
