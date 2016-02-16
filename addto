@@ -37,16 +37,36 @@ shift
 FILE=$1
 shift
 
+# Linux uses GNU date, while OS X uses a BAD date.
+_get_file () {
+    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        if [[ $DAY == "5" ]]; then
+            # Friday, skip to next Monday
+            MODIFIER="next monday"
+        else
+            MODIFIER="tomorrow"
+        fi
+        FILE=$(date --date="$MODIFIER" +%Y-%m-%d)
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        if [[ $DAY == "5" ]]; then
+            # Friday, skip to next Monday
+            MODIFIER="+Mon"
+        else
+            MODIFIER="+1d"
+        fi
+        FILE=$(date -v$MODIFIER +%Y-%m-%d)
+    else
+            # Unknown.
+            echo "Only Linux and OS X are supported currently";
+            exit 1;
+    fi
+}
+
 # Deal with 'tomorrow' as a filename
 if [[ $FILE == 'tomorrow' ]]; then
     DAY=$(date +%w)
-    if [[ $DAY == "5" ]]; then
-        # Friday, skip to next Monday
-        MODIFIER="+Mon"
-    else
-        MODIFIER="+1d"
-    fi
-    FILE=$(date -v$MODIFIER +%Y-%m-%d)
+    # Set $FILE
+    _get_file
 fi
 
 # Make sure the filename has a .txt extension on the end
