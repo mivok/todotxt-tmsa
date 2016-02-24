@@ -142,7 +142,7 @@ if __name__ == '__main__':
     if action == 'verify':
         unmanaged = find_unmanaged()
         if unmanaged:
-            print '\n'.join(find_unmanaged())
+            print '\n'.join(sorted(find_unmanaged()))
         sys.exit(0)
 
     if action == 'bump' or action == 'bumpall':
