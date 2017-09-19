@@ -68,8 +68,8 @@ def find_unmanaged():
     os.chdir(os.environ["TODO_DIR"])
     now = datetime.datetime.now().replace(hour=0, minute=0, second=0,
                                           microsecond=0)
-    for f in glob.glob("????-??-??.txt"):
-        d, e = f.split(".")
+    for f in glob.glob("????-??-??.todo.txt"):
+        d, e = f.split(".", 1)
         size = os.stat(f).st_size
         if datetime.datetime.strptime(d, "%Y-%m-%d") < now and size > 0:
             unmanaged.append(f)
@@ -90,7 +90,7 @@ def bump(from_file, to_file, line_num=None):
     ofh = open(to_file, "a")  # File to bump to
     tfh = open("%s.tmp" % from_file, "w")  # Temporary file
     if auto_archive:
-        dfh = open("%s-done.txt" % from_file[:-4], "a")  # Done file
+        dfh = open("%s.done.txt" % from_file[:-4], "a")  # Done file
     else:
         dfh = tfh
     bumped = []
@@ -164,15 +164,15 @@ if __name__ == '__main__':
         else:
             days = 1
         next_day = now + datetime.timedelta(days=days)
-        today = now.strftime("%Y-%m-%d.txt")
-        next_file = next_day.strftime("%Y-%m-%d.txt")
+        today = now.strftime("%Y-%m-%d.todo.txt")
+        next_file = next_day.strftime("%Y-%m-%d.todo.txt")
         bump(today, next_file, to_bump)
         sys.exit(0)
 
     if action == 'bringforward':
         now = datetime.datetime.now()
         unmanaged = find_unmanaged()
-        today = now.strftime("%Y-%m-%d.txt")
+        today = now.strftime("%Y-%m-%d.todo.txt")
         for f in unmanaged:
             bump(f, today)
         sys.exit(0)
