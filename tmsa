@@ -156,6 +156,7 @@ if __name__ == '__main__':
 
     if action == 'bump' or action == 'bumpall':
         to_bump = None
+        now = datetime.datetime.now()
         weekday = now.weekday()
         if weekday == '5':
             # Today is friday, skip to monday
@@ -173,7 +174,6 @@ if __name__ == '__main__':
             except ValueError:
                 usage('bump')
                 sys.exit(1)
-        now = datetime.datetime.now()
         next_day = now + datetime.timedelta(days=days)
         today = now.strftime("%Y-%m-%d.txt")
         next_file = next_day.strftime("%Y-%m-%d.txt")
