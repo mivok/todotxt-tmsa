@@ -61,6 +61,12 @@ def strip_priority(line):
     "Removes the priority, if any, from a todo item"
     return re.sub('^\([A-Z]\) ', '', line)
 
+def undone_lines(fh):
+    "Internal function to return lines in a file handle not marked as done."
+    content = fh.readlines()
+    undone_lines = filter(lambda l: re.match('^(?!x \d{4}-\d{2}-\d{2})',l) ,content)
+    return undone_lines;
+
 
 def find_unmanaged():
     "Find files with unmanaged active tasks"
@@ -74,9 +80,7 @@ def find_unmanaged():
         # Find the date-based files before today that contain any non-done items
         if datetime.datetime.strptime(d, "%Y-%m-%d") < now and size > 0:
             with open(f) as fh:
-                content = fh.readlines()
-                undone_lines = filter(lambda l: re.match('^(?!x \d{4}-\d{2}-\d{2})',l) ,content)
-                if undone_lines:
+                if undone_lines(fh):
                    unmanaged.append(f)
     return unmanaged
 
@@ -99,7 +103,7 @@ def bump(from_file, to_file, line_num=None):
     else:
         dfh = tfh
     bumped = []
-    for n, line in enumerate(ifh):
+    for n, line in enumerate(undone_lines(ifh)):
         n += 1  # 1-indexed lines
         if not line_num or line_num == n:
             ## Bump the item
