@@ -31,7 +31,7 @@ commands = {
     'bringforward': ["Bring forward any unmanaged tasks to today"],
     'bump': ["Bump a task to the next day", "For example, bump 2"],
     'bumpall': ["Bump all tasks to the next day"],
-    'verify': ["Print out to do files that have unmanaged tasks"],
+    'verify': ["Print out to do files that have unmanaged active tasks"],
     'tmsa': [
         "Time management for systems administrators helper script.",
         "Provides a set of commands to help with the Cycle, which",
@@ -63,7 +63,7 @@ def strip_priority(line):
 
 
 def find_unmanaged():
-    "Find files with unmanaged tasks"
+    "Find files with unmanaged active tasks"
     unmanaged = []
     os.chdir(os.environ["TODO_DIR"])
     now = datetime.datetime.now().replace(hour=0, minute=0, second=0,
@@ -71,8 +71,13 @@ def find_unmanaged():
     for f in glob.glob("????-??-??.txt"):
         d, e = f.split(".")
         size = os.stat(f).st_size
+        # Find the date-based files before today that contain any non-done items
         if datetime.datetime.strptime(d, "%Y-%m-%d") < now and size > 0:
-            unmanaged.append(f)
+            with open(f) as fh:
+                content = fh.readlines()
+                undone_lines = filter(lambda l: re.match('^(?!x \d{4}-\d{2}-\d{2})',l) ,content)
+                if undone_lines:
+                   unmanaged.append(f)
     return unmanaged
 
 
