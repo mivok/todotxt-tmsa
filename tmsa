@@ -155,23 +155,26 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if action == 'bump' or action == 'bumpall':
+        SKIP_WEEKEND = False
         to_bump = None
+        weekday = now.weekday()
+        if weekday == '5' and not SKIP_WEEKEND:
+            # Today is friday, skip to monday
+            days = 3
+        else:
+            days = 1
         if action == 'bump':
             if len(sys.argv) < 3:
                 usage('bump')
                 sys.exit(1)
             try:
                 to_bump = int(sys.argv[2])
+                if len(sys.argv) == 4:
+                    days = int(sys.argv[3])
             except ValueError:
                 usage('bump')
                 sys.exit(1)
         now = datetime.datetime.now()
-        weekday = now.weekday()
-        if weekday == '5':
-            # Today is friday, skip to monday
-            days = 3
-        else:
-            days = 1
         next_day = now + datetime.timedelta(days=days)
         today = now.strftime("%Y-%m-%d.txt")
         next_file = next_day.strftime("%Y-%m-%d.txt")
