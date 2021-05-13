@@ -155,10 +155,9 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if action == 'bump' or action == 'bumpall':
-        SKIP_WEEKEND = False
         to_bump = None
         weekday = now.weekday()
-        if weekday == '5' and not SKIP_WEEKEND:
+        if weekday == '5':
             # Today is friday, skip to monday
             days = 3
         else:
