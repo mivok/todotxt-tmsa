@@ -33,6 +33,7 @@ from node import Node, pprint_tree
 # https://pypi.org/project/termcolor/
 day_color = 'red'
 day_attrs = ['bold']
+day_format = "%b %d"
 
 try: from termcolor import colored
 except ImportError:
@@ -98,7 +99,19 @@ def find_unmanaged():
                    unmanaged.append(f)
     return unmanaged
 
-def find_future():
+def decode_recurcmd(cmdstr):
+    "Return a dictionary with 'day', 'task', and a list 'weeks'"
+    result = {}
+    precol,postcol = cmdstr.split(':')
+    time_pos = precol.rsplit(maxsplit=1)
+    result['day'] = time_pos[-1].strip().lower()
+    result['weeks'] = []
+    if len(time_pos) > 1:
+        result['weeks'] = [week.strip() for week in time_pos[0].split(',')]
+    result['task'] = postcol.strip()
+    return result
+
+def find_future_files():
     "Find files which occur after today"
     files = []
     today = datetime.datetime.now().replace(hour=0, minute=0, second=0,
@@ -110,22 +123,57 @@ def find_future():
         size = os.stat(fn).st_size
         if datetime.datetime.strptime(d, "%Y-%m-%d") > today and size > 0:
             files.append(fn)
-
     return files
 
+def get_future_remcur():
+    result = {}
+    # today = datetime.datetime.now().replace(hour=0, minute=0, second=0,
+    #                                       microsecond=0)
+    today = datetime.date.today()
+    days = [day.lower() for day in calendar.weekheader(10).split()]
+    numbers = ["first", "second", "third", "fourth", "five"]
+    with open("recur.txt", 'r') as f:
+        recur_tasks = [decode_recurcmd(line.strip()) for line in f if not
+                line.isspace()]
+    found_tr_day = None
+    for task_rule in recur_tasks:
+        if task_rule['weeks']:
+            day_index = days.index(task_rule['day'])
+            cal = calendar.Calendar(day_index).monthdatescalendar(today.year,
+                    today.month)
+            for week in task_rule['weeks']:
+                try:
+                    wn = numbers.index(week)+1
+                except(ValueError):
+                    if week == 'last':
+                        wn = -1
+                    else:
+                        raise ValueError("%s is not a week name" % week)
+                found_tr_day = cal[wn][0]
+                if found_tr_day > today: break
+                else: found_tr_day = None
+        else:
+            wdnum = today.weekday()
+            diff = days.index(task_rule['day']) - wdnum
+            if diff < 0: diff += 7
+            found_tr_day = today+datetime.timedelta(diff)
 
-def gen_tree(files):
-    "Generate a list of nodes for each file. List of files as input"
-    day_nodes = []
-    for day in files:
-        day_base = os.path.splitext(day)[0]
-        day_obj = datetime.datetime.strptime(day_base, "%Y-%m-%d")
-        day_pn = day_obj.strftime("%b %d")
-        with open(day) as content:
-            day_nodes.append(Node(colored(day_pn, day_color, attrs=day_attrs)
-                if enableColoring else day_pn, [Node(line.strip()) for line in
-                    content.readlines() if not line.isspace()]))
+        if found_tr_day is not None:
+            if found_tr_day in result:
+                result[found_tr_day].append(task_rule['task'])
+            else:
+                result[found_tr_day] = [task_rule['task']]
+    return result
 
+def gen_tree(tasks):
+    "Generate a list of nodes for the given task dictionary in order"
+    pretty_tasks = {}
+    for date in sorted(tasks):
+        pretty_tasks[date.strftime(day_format)] = tasks[date]
+
+    day_nodes = [Node(colored(k, day_color, attrs=day_attrs) if enableColoring
+        else k, [Node(t) for t in pretty_tasks[k]]) for k in pretty_tasks if
+        pretty_tasks[k]]
     return day_nodes
 
 
@@ -199,7 +247,27 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if action == 'future':
-        day_nodes = gen_tree(find_future())
+        tasks = {}
+        files = find_future_files()
+        for day in files:
+            day_base = os.path.splitext(day)[0]
+            day_obj = datetime.datetime.strptime(day_base, "%Y-%m-%d").date()
+            with open(day) as f:
+                tasks[day_obj] = [line.strip() for line in f if not
+                        line.isspace()]
+
+        if os.path.exists("recur.txt"):
+            import calendar
+            tfr = get_future_remcur()
+            # Merge the two
+            for task in tasks:
+                if task in tfr:
+                    tasks[task] += tfr[task]
+                    del tfr[task]
+                    break
+            tasks |= tfr
+
+        day_nodes = gen_tree(tasks)
         for tree in day_nodes:
             pprint_tree(tree)
             print()
