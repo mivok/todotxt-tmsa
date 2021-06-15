@@ -28,12 +28,15 @@ import re
 import sys
 from node import Node, pprint_tree
 
+# OPTIONS
 # Text attributes for coloring and boldness
 # See the termcolor documentation for more options:
 # https://pypi.org/project/termcolor/
 day_color = 'red'
 day_attrs = ['bold']
 day_format = "%b %d"
+# Show task using the weekday name instead of the day format
+day_name_if_soon = True
 
 try: from termcolor import colored
 except ImportError:
@@ -168,9 +171,12 @@ def get_future_remcur():
 def gen_tree(tasks):
     "Generate a list of nodes for the given task dictionary in order"
     pretty_tasks = {}
+    today = datetime.date.today()
     for date in sorted(tasks):
-        pretty_tasks[date.strftime(day_format)] = tasks[date]
+        pretty_tasks[date.strftime('%A' if day_name_if_soon and date - today <
+            datetime.timedelta(weeks=1) else day_format)] = tasks[date]
 
+    # Since Python 3.6 dictionaries remember order insertion
     day_nodes = [Node(colored(k, day_color, attrs=day_attrs) if enableColoring
         else k, [Node(t) for t in pretty_tasks[k]]) for k in pretty_tasks if
         pretty_tasks[k]]
