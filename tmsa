@@ -49,7 +49,8 @@ commands = {
     'bump': ["Bump a task to the next day", "For example, bump 2"],
     'bumpall': ["Bump all tasks to the next day"],
     'verify': ["Print out to do files that have unmanaged active tasks"],
-    'future': ["Print a tree of all the future tasks"],
+    'future': ["Print a tree of all the future tasks", "Give a number to limit\
+ it by that number of weeks into the future"],
     'tmsa': [
         "Time management for systems administrators helper script.",
         "Provides a set of commands to help with the Cycle, which",
@@ -255,6 +256,11 @@ if __name__ == '__main__':
     if action == 'future':
         tasks = {}
         files = find_future_files()
+        if len(sys.argv) > 2:
+            limit = datetime.timedelta(weeks = int(sys.argv[2]))
+        else:
+            limit = datetime.timedelta.max
+
         for day in files:
             day_base = os.path.splitext(day)[0]
             day_obj = datetime.datetime.strptime(day_base, "%Y-%m-%d").date()
@@ -273,6 +279,10 @@ if __name__ == '__main__':
                     break
             tasks |= tfr
 
+        today = datetime.date.today()
+        for date in tasks.copy():
+            if date - today > limit:
+                tasks.pop(date)
         day_nodes = gen_tree(tasks)
         for tree in day_nodes:
             pprint_tree(tree)
