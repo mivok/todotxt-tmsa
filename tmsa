@@ -170,16 +170,16 @@ def get_future_remcur():
 
 def gen_tree(tasks):
     "Generate a list of nodes for the given task dictionary in order"
-    pretty_tasks = {}
+    trans = {} # a copy of tasks transformed for pretty keys
     today = datetime.date.today()
     for date in sorted(tasks):
-        pretty_tasks[date.strftime('%A' if day_name_if_soon and date - today <
-            datetime.timedelta(weeks=1) else day_format)] = tasks[date]
+        pretty_key = date.strftime('%A' if day_name_if_soon and date - today <
+                datetime.timedelta(weeks=1) else day_format)
+        pretty_key = colored(pretty_key, day_color, attrs=day_attrs) if enableColoring else pretty_key
+        trans[pretty_key] = tasks[date]
 
     # Since Python 3.6 dictionaries remember order insertion
-    day_nodes = [Node(colored(k, day_color, attrs=day_attrs) if enableColoring
-        else k, [Node(t) for t in pretty_tasks[k]]) for k in pretty_tasks if
-        pretty_tasks[k]]
+    day_nodes = [Node(k, [Node(t) for t in trans[k]]) for k in trans if trans[k]]
     return day_nodes
 
 
