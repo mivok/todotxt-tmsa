@@ -26,12 +26,31 @@ import glob
 import os
 import re
 import sys
+from node import Node, pprint_tree
+
+# OPTIONS
+# Text attributes for coloring and boldness
+# See the termcolor documentation for more options:
+# https://pypi.org/project/termcolor/
+day_color = 'red'
+day_attrs = ['bold']
+day_format = "%b %d"
+# Show task using the weekday name instead of the day format
+day_name_if_soon = True
+
+try: from termcolor import colored
+except ImportError:
+    enableColoring = False
+else:
+    enableColoring = True
 
 commands = {
     'bringforward': ["Bring forward any unmanaged tasks to today"],
     'bump': ["Bump a task to the next day", "For example, bump 2"],
     'bumpall': ["Bump all tasks to the next day"],
     'verify': ["Print out to do files that have unmanaged active tasks"],
+    'future': ["Print a tree of all the future tasks", "Give a number to limit\
+ it by that number of weeks into the future"],
     'tmsa': [
         "Time management for systems administrators helper script.",
         "Provides a set of commands to help with the Cycle, which",
@@ -83,6 +102,92 @@ def find_unmanaged():
                 if undone_lines(fh):
                    unmanaged.append(f)
     return unmanaged
+
+def decode_recurcmd(cmdstr):
+    "Return a dictionary with 'day', 'task', and a list 'weeks'"
+    result = {}
+    precol,postcol = cmdstr.split(':')
+    time_pos = precol.rsplit(maxsplit=1)
+    result['day'] = time_pos[-1].strip().lower()
+    result['weeks'] = []
+    if len(time_pos) > 1:
+        result['weeks'] = [week.strip() for week in time_pos[0].split(',')]
+    result['task'] = postcol.strip()
+    return result
+
+def find_future_files():
+    "Find files which occur after today"
+    files = []
+    today = datetime.datetime.now().replace(hour=0, minute=0, second=0,
+                                          microsecond=0)
+    os.chdir(os.environ["TODO_DIR"])
+
+    for fn in sorted(glob.iglob("????-??-??.txt")):
+        d, e = fn.split(".")
+        size = os.stat(fn).st_size
+        if datetime.datetime.strptime(d, "%Y-%m-%d") > today and size > 0:
+            files.append(fn)
+    return files
+
+def get_future_remcur():
+    result = {}
+    # today = datetime.datetime.now().replace(hour=0, minute=0, second=0,
+    #                                       microsecond=0)
+    today = datetime.date.today()
+    days = [day.lower() for day in calendar.weekheader(10).split()]
+    numbers = ["first", "second", "third", "fourth", "five"]
+    with open("recur.txt", 'r') as f:
+        recur_tasks = [decode_recurcmd(line.strip()) for line in f if not
+                line.isspace()]
+    found_tr_day = None
+    for task_rule in recur_tasks:
+        if task_rule['weeks']:
+            day_index = days.index(task_rule['day'])
+            cal = calendar.Calendar(day_index).monthdatescalendar(today.year,
+                    today.month)
+            for week in task_rule['weeks']:
+                try:
+                    wn = numbers.index(week)+1
+                except(ValueError):
+                    if week == 'last':
+                        wn = -1
+                    else:
+                        raise ValueError("%s is not a week name" % week)
+                found_tr_day = cal[wn][0]
+                if found_tr_day > today: break
+                else: found_tr_day = None
+        else:
+            wdnum = today.weekday()
+            diff = days.index(task_rule['day']) - wdnum
+            if diff <= 0: diff += 7
+            found_tr_day = today+datetime.timedelta(diff)
+
+        if found_tr_day is not None:
+            if found_tr_day in result:
+                result[found_tr_day].append(task_rule['task'])
+            else:
+                result[found_tr_day] = [task_rule['task']]
+    return result
+
+def gen_tree(tasks):
+    "Generate a list of nodes for the given task dictionary in order"
+    trans = {} # a copy of tasks transformed for pretty keys
+    today = datetime.date.today()
+    one_week = datetime.timedelta(weeks=1)
+    for date in sorted(tasks):
+        diff = date - today
+        pretty_key = date.strftime('%A' if day_name_if_soon and diff <=
+                one_week else day_format)
+        if diff == one_week:
+            pretty_key = "Next " + pretty_key
+        if enableColoring:
+            pretty_key = colored(pretty_key, day_color, attrs=day_attrs)
+
+        trans[pretty_key] = tasks[date]
+
+    # Since Python 3.6 dictionaries remember order insertion
+    day_nodes = [Node(k, [Node(t) for t in trans[k]]) for k in trans if trans[k]]
+    return day_nodes
 
 
 def bump(from_file, to_file, line_num=None):
@@ -153,6 +258,41 @@ if __name__ == '__main__':
         if unmanaged:
             print('\n'.join(sorted(find_unmanaged())))
         sys.exit(0)
+
+    if action == 'future':
+        tasks = {}
+        files = find_future_files()
+        if len(sys.argv) > 2:
+            limit = datetime.timedelta(weeks = int(sys.argv[2]))
+        else:
+            limit = datetime.timedelta.max
+
+        for day in files:
+            day_base = os.path.splitext(day)[0]
+            day_obj = datetime.datetime.strptime(day_base, "%Y-%m-%d").date()
+            with open(day) as f:
+                tasks[day_obj] = [line.strip() for line in f if not
+                        line.isspace()]
+
+        if os.path.exists("recur.txt"):
+            import calendar
+            tfr = get_future_remcur()
+            # Merge the two
+            for task in tasks:
+                if task in tfr:
+                    tasks[task] += tfr[task]
+                    del tfr[task]
+                    break
+            tasks |= tfr
+
+        today = datetime.date.today()
+        for date in tasks.copy():
+            if date - today > limit:
+                tasks.pop(date)
+        day_nodes = gen_tree(tasks)
+        for tree in day_nodes:
+            pprint_tree(tree)
+            print()
 
     if action == 'bump' or action == 'bumpall':
         to_bump = None

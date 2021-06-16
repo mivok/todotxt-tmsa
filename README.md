@@ -38,6 +38,8 @@ you to easily move tasks between different todo lists.
    before bumping to the next day.
  * verify - Search all files for unmanaged tasks (those that haven't been
    completed and/or bumped to a later day)
+ * future - Print list of upcoming tasks. Shown as a tree where each day is a
+   node.
  * bringforward - bring all the tasks you forgot to manage on to today's todo
    list.
 
