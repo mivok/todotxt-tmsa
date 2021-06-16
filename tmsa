@@ -159,7 +159,7 @@ def get_future_remcur():
         else:
             wdnum = today.weekday()
             diff = days.index(task_rule['day']) - wdnum
-            if diff < 0: diff += 7
+            if diff <= 0: diff += 7
             found_tr_day = today+datetime.timedelta(diff)
 
         if found_tr_day is not None:
@@ -173,10 +173,16 @@ def gen_tree(tasks):
     "Generate a list of nodes for the given task dictionary in order"
     trans = {} # a copy of tasks transformed for pretty keys
     today = datetime.date.today()
+    one_week = datetime.timedelta(weeks=1)
     for date in sorted(tasks):
-        pretty_key = date.strftime('%A' if day_name_if_soon and date - today <
-                datetime.timedelta(weeks=1) else day_format)
-        pretty_key = colored(pretty_key, day_color, attrs=day_attrs) if enableColoring else pretty_key
+        diff = date - today
+        pretty_key = date.strftime('%A' if day_name_if_soon and diff <=
+                one_week else day_format)
+        if diff == one_week:
+            pretty_key = "Next " + pretty_key
+        if enableColoring:
+            pretty_key = colored(pretty_key, day_color, attrs=day_attrs)
+
         trans[pretty_key] = tasks[date]
 
     # Since Python 3.6 dictionaries remember order insertion
