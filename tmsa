@@ -106,7 +106,7 @@ def find_unmanaged():
 def decode_recurcmd(cmdstr):
     "Return a dictionary with 'day', 'task', and a list 'weeks'"
     result = {}
-    precol,postcol = cmdstr.split(':')
+    precol,postcol = cmdstr.split(':', 1)
     time_pos = precol.rsplit(maxsplit=1)
     result['day'] = time_pos[-1].strip().lower()
     result['weeks'] = []
@@ -283,7 +283,7 @@ if __name__ == '__main__':
                     tasks[task] += tfr[task]
                     del tfr[task]
                     break
-            tasks |= tfr
+            tasks.update(tfr)
 
         today = datetime.date.today()
         for date in tasks.copy():
