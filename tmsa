@@ -28,7 +28,7 @@ import re
 import sys
 
 commands = {
-    'bringforward': ["Bring forward any unmanaged tasks to today"],
+    'bringforward': ["Bring forward unmanaged tasks from last day to today"],
     'bump': ["Bump a task to the next day", "For example, bump 2"],
     'bumpall': ["Bump all tasks to the next day"],
     'verify': ["Print out to do files that have unmanaged active tasks"],
@@ -184,8 +184,11 @@ if __name__ == '__main__':
         now = datetime.datetime.now()
         unmanaged = find_unmanaged()
         today = now.strftime("%Y-%m-%d.txt")
-        for f in unmanaged:
-            bump(f, today)
+        if not unmanaged:
+            print("TODO: no unmanaged tasks to bring forward")
+            sys.exit(0)
+        # Only bring forward the latest day that still has open tasks.
+        bump(max(unmanaged), today)
         sys.exit(0)
 
     if action == 'tmsa':
