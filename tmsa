@@ -59,12 +59,12 @@ def make_symlinks():
 
 def strip_priority(line):
     "Removes the priority, if any, from a todo item"
-    return re.sub('^\([A-Z]\) ', '', line)
+    return re.sub(r'^\([A-Z]\) ', '', line)
 
 def undone_lines(fh):
     "Internal function to return lines in a file handle not marked as done."
     content = fh.readlines()
-    undone_lines = [l for l in content if re.match('^(?!x \d{4}-\d{2}-\d{2})',l)]
+    undone_lines = [l for l in content if re.match(r'^(?!x \d{4}-\d{2}-\d{2})',l)]
     return undone_lines;
 
 
